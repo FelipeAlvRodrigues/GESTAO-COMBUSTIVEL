@@ -1,2 +1,2 @@
-# GEST-O-COMBUSTIVEL
+# GESTAO-COMBUSTIVEL
 Aplicativo para realizar a gestão de combustível.
