@@ -16,28 +16,28 @@ import Header from '../components/Header';
 import Container from '../components/Container';
 import Body from '../components/Body';
 import Input from '../components/Input';
+import { insertGasto, getGastos, updateGasto, deleteGasto } from '../services/Gastos.Services';
 
-const Abastecimento = ({route}) => {
+const Abastecimento = ({ route }) => {
   const navigation = useNavigation();
-  const {item} =route.params? route.params: {};
+  const { item } = route.params ? route.params : {};
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [tipo, setTipo] = useState('gas');
-  
+
   const [preco, setPreco] = useState('');
   const [valor, setValor] = useState('');
   const [odometro, setOdometro] = useState('');
   const [data, setData] = useState('');
 
-  useEffect(() =>{
-    if(item){
-      setTipo(item.tipo == 0? 'gas': 'eta');
+  useEffect(() => {
+    if (item) {
+      setTipo(item.tipo == 0 ? 'gas' : 'eta');
       setData(item.data);
       setPreco(item.preco.toFixed(2));
       setValor(item.valor.toFixed(2));
       setOdometro(item.odometro.toFixed(0));
-
     }
   }, [item]);
 
@@ -69,10 +69,10 @@ const Abastecimento = ({route}) => {
 
   const onChange = (event, selectedDate) => {
     console.log('onChange chamado', event, selectedDate);
-    
+
     // Fecha o picker padrão no Android
     setShow(false);
-    
+
     if (selectedDate) {
       setDate(selectedDate);
       // Formata a data para exibição
@@ -92,16 +92,115 @@ const Abastecimento = ({route}) => {
     console.log('Data confirmada no modal:', formattedDate);
   };
 
-  const handleSalvar = () => {
-    console.log('Salvar');
-    // Verificação para debug
-    if (!data) {
-      Alert.alert('Atenção', 'Selecione uma data antes de salvar');
+  const handleSalvar = async () => {
+    try {
+      // Validação dos campos obrigatórios
+      if (!preco || !valor || !odometro || !data) {
+        Alert.alert(
+          "Campos obrigatórios", 
+          "Por favor, preencha todos os campos antes de salvar.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      // Validação se os campos não estão vazios (apenas espaços)
+      if (preco.trim() === '' || valor.trim() === '' || odometro.trim() === '') {
+        Alert.alert(
+          "Campos inválidos", 
+          "Por favor, preencha todos os campos com valores válidos.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      // Converter strings para números
+      const precoNumerico = parseFloat(preco.replace(',', '.'));
+      const valorNumerico = parseFloat(valor.replace(',', '.'));
+      const odometroNumerico = parseFloat(odometro);
+
+      // Validar se as conversões foram bem-sucedidas
+      if (isNaN(precoNumerico) || isNaN(valorNumerico) || isNaN(odometroNumerico)) {
+        Alert.alert(
+          "Valores inválidos", 
+          "Por favor, insira valores numéricos válidos nos campos de preço, valor e odômetro.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      // Validar se os valores são positivos
+      if (precoNumerico <= 0 || valorNumerico <= 0 || odometroNumerico <= 0) {
+        Alert.alert(
+          "Valores inválidos", 
+          "Por favor, insira valores maiores que zero.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      const gastoData = {
+        tipo: tipo === 'gas' ? 0 : 1,
+        data: data,
+        preco: precoNumerico,
+        valor: valorNumerico,
+        odometro: odometroNumerico,
+      };
+
+      if (item) {
+        // Editando um gasto existente
+        await updateGasto({
+          ...gastoData,
+          id: item.id,
+        });
+        console.log("Gasto atualizado:", gastoData);
+      } else {
+        // Criando um novo gasto
+        const result = await insertGasto(gastoData);
+        console.log("Gasto inserido:", gastoData, "Result:", result);
+      }
+      
+      console.log("Gasto salvo. Voltando para a tela de Gastos...");
+      navigation.goBack();
+    } catch (error) {
+      console.error("Erro ao salvar o gasto:", error);
+      Alert.alert(
+        "Erro", 
+        "Não foi possível salvar o gasto. Tente novamente.",
+        [{ text: "OK" }]
+      );
     }
   };
 
   const handleExcluir = () => {
-    console.log('Excluir');
+    Alert.alert(
+      "Confirmar exclusão",
+      "Tem certeza que deseja excluir este abastecimento? Esta ação não pode ser desfeita.",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteGasto(item.id);
+              console.log("Gasto excluído com sucesso");
+              navigation.goBack();
+            } catch (error) {
+              console.error("Erro ao excluir o gasto:", error);
+              Alert.alert(
+                "Erro", 
+                "Não foi possível excluir o abastecimento. Tente novamente.",
+                [{ text: "OK" }]
+              );
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -109,10 +208,10 @@ const Abastecimento = ({route}) => {
       <Container>
         <Header title={'Abastecimento'} goBack={() => navigation.goBack()}>
           <Appbar.Action icon="check" onPress={handleSalvar} />
-        {
-          item && 
-          <Appbar.Action icon="trash-can" onPress={handleExcluir} />
-        }
+          {
+            item &&
+            <Appbar.Action icon="trash-can" onPress={handleExcluir} />
+          }
         </Header>
         <Body>
           <View style={styles.containerRadio}>
@@ -125,7 +224,7 @@ const Abastecimento = ({route}) => {
               />
               <Text>Gasolina</Text>
             </View>
-            
+
             <View style={styles.containerRadioItem}>
               <RadioButton
                 value="eta"
@@ -136,9 +235,7 @@ const Abastecimento = ({route}) => {
               <Text>Etanol</Text>
             </View>
           </View>
-          
-          {/* Removemos o botão de teste já que agora temos uma solução melhor */}
-          
+
           {/* MÉTODO 1: Renderização condicional para Android */}
           {show && Platform.OS === 'android' && (
             <DateTimePicker
@@ -150,7 +247,7 @@ const Abastecimento = ({route}) => {
               onChange={onChange}
             />
           )}
-          
+
           {/* MÉTODO 2: Modal para iOS */}
           <Portal>
             <Modal
@@ -176,75 +273,65 @@ const Abastecimento = ({route}) => {
               </View>
             </Modal>
           </Portal>
-          
+
           {/* Campo de entrada para a data - Implementação Alternativa */}
           <View style={styles.dateInputContainer}>
-            <Text style={styles.inputLabel}>Data</Text>
-            <Button 
+            <Text style={styles.inputLabel}>Data *</Text>
+            <Button
               mode="outlined"
               onPress={showDatePicker}
               style={styles.dateButton}
               contentStyle={styles.dateButtonContent}
               icon="calendar"
             >
-              {data}
+              {data || 'Selecione a data'}
             </Button>
           </View>
-          
-          {/* Código original comentado para referência 
-          <TouchableOpacity 
-            onPress={showDatePicker} 
-            activeOpacity={0.6}
-            style={styles.dateInputContainer}
-          >
-            <Input
-              label="Data"
-              value={data}
-              left={<TextInput.Icon icon="calendar" />}
-              editable={false}
-              right={<TextInput.Icon icon="chevron-down" />}
-              style={styles.dateInput}
-            />
-          </TouchableOpacity>
-          */}
-          
+
           <Input
-            label="Preço"
+            label="Preço por litro *"
             value={preco}
             onChangeText={(text) => setPreco(text)}
             left={<TextInput.Icon icon="currency-brl" />}
             keyboardType="numeric"
+            placeholder="Ex: 5.89"
           />
-          
+
           <Input
-            label="Valor"
+            label="Valor total *"
             value={valor}
             onChangeText={(text) => setValor(text)}
             left={<TextInput.Icon icon="currency-brl" />}
             keyboardType="numeric"
+            placeholder="Ex: 50.00"
           />
-          
+
           <Input
-            label="Odomêtro"
+            label="Odômetro *"
             value={odometro}
             onChangeText={(text) => setOdometro(text)}
-            left={<TextInput.Icon icon="camera-timer" />}
+            left={<TextInput.Icon icon="speedometer" />}
             keyboardType="numeric"
+            placeholder="Ex: 15000"
           />
-          
+
+          <Text style={styles.requiredFieldsNote}>
+            * Campos obrigatórios
+          </Text>
+
           <Button mode="contained" style={styles.button} onPress={handleSalvar}>
-            Salvar
+            {item ? 'Atualizar' : 'Salvar'}
           </Button>
-          
+
           {item && (
-          <Button
-            mode="contained"
-            buttonColor={'red'}
-            style={styles.button}
-            onPress={handleExcluir}>
-            Excluir
-          </Button>
-        )}
+            <Button
+              mode="contained"
+              buttonColor={'red'}
+              style={styles.button}
+              onPress={handleExcluir}>
+              Excluir
+            </Button>
+          )}
 
         </Body>
       </Container>
@@ -306,6 +393,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
     marginTop: 20,
+  },
+  requiredFieldsNote: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+    marginBottom: 16,
+    textAlign: 'center',
   },
 });
 
