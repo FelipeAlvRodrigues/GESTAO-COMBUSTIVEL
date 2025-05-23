@@ -1,0 +1,103 @@
+###########################
+# 🔐 Autenticação
+###########################
+
+### LOGIN
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+  "email": "seuemail@email.com",
+  "password": "suasenha"
+}
+
+# ⬆️ Copie o token retornado aqui 👇
+@token=SEU_TOKEN_AQUI
+
+###########################
+# 🚗 GASTOS - SEM AUTENTICAÇÃO
+###########################
+
+### GET - Listar todos os gastos
+GET http://localhost:3000/gastos
+
+
+### POST - Criar um novo gasto
+POST http://localhost:3000/gastos
+Content-Type: application/json
+
+{
+  "tipo": 0,
+  "data": "15/01/2022",
+  "preco": 7.77,
+  "valor": 150.00,
+  "odometro": 35000
+}
+
+
+### PUT - Atualizar o gasto com id=3
+PUT http://localhost:3000/gastos/3
+Content-Type: application/json
+
+{
+  "tipo": 1,
+  "data": "10/01/2022",
+  "preco": 7.5,
+  "valor": 130.00,
+  "odometro": 34000
+}
+
+
+### GET - Buscar gasto com id=3
+GET http://localhost:3000/gastos/3
+
+
+### DELETE - Remover gasto com id=3
+DELETE http://localhost:3000/gastos/3
+
+
+###########################
+# 🔐 GASTOS - COM AUTENTICAÇÃO
+###########################
+
+### GET - Listar todos os gastos (autenticado)
+GET http://localhost:3000/660/gastos
+Authorization: Bearer {{token}}
+
+
+### POST - Criar um novo gasto (autenticado)
+POST http://localhost:3000/660/gastos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "tipo": 0,
+  "data": "15/01/2022",
+  "preco": 7.77,
+  "valor": 150.00,
+  "odometro": 35000
+}
+
+
+### PUT - Atualizar o gasto com id=3 (autenticado)
+PUT http://localhost:3000/660/gastos/3
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "tipo": 1,
+  "data": "10/01/2022",
+  "preco": 7.5,
+  "valor": 130.00,
+  "odometro": 34000
+}
+
+
+### GET - Buscar gasto com id=3 (autenticado)
+GET http://localhost:3000/660/gastos/3
+Authorization: Bearer {{token}}
+
+
+### DELETE - Remover gasto com id=3 (autenticado)
+DELETE http://localhost:3000/660/gastos/3
+Authorization: Bearer {{token}}
